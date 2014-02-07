@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>body {
+  background-color: #000000;
+  margin: 0px;
+  overflow: hidden;
+}
+
+a {
+  color:#0078ff;
+}</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+<script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+<script type="text/javascript">
+var mouseX = 0, mouseY = 0,
+
+windowHalfX = window.innerWidth / 2,
+windowHalfY = window.innerHeight / 2,
+
+SEPARATION = 200,
+AMOUNTX = 10,
+AMOUNTY = 10,
+
+camera, scene, renderer;
+$(document).ready(function(){
+  console.log('Sending request')
+  $.ajax({
+    dataType: "json",
+    url: 'http://localhost:3210/ajax/galaxy',
+    timeout: 10000,
+    success: onSuccess,
+    error: onError,
+  });
+  function onSuccess(data){
+    console.log('Received response')
+    console.log(data.LO)
+    //console.log(data);
+    var systems = {};
+    data.systems.forEach(function(n){ //careful of overwrites
+      systems[String(n.solarSystemID)] = n;
+    });
+    init(systems, data.jumps, data.LO);
+    animate();
+  };
+  function onError(errXHR, errStr, errExc){
+    console.log('Response error')
+    console.log(errXHR);
+    console.log(errStr);
+  };
+/*
+  $.getJSON('http://localhost:3210/ajax/galaxy',{},function(data){
+    console.log('Received response')
+    console.log(data.LO)
+    //console.log(data);
+    var systems = {};
+    data.systems.forEach(function(n){ //careful of overwrites
+      systems[String(n.solarSystemID)] = n;
+    });
+    init(systems, data.jumps, data.LO);
+    animate();
+  });
+*/
+
+});
+
+function init(systems, jumps, LO) {
+
+  var container, separation = 100, amountX = 50, amountY = 50,
+  particles, particle;
+  
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.001, 10000 );
+  camera.position.z = 100;
+  
+  scene = new THREE.Scene();
+  
+  renderer = new THREE.CanvasRenderer();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  container.appendChild( renderer.domElement );
+  
+  // particles
+  
+  var PI2 = Math.PI * 2;
+  var colorMaterial = function(hex){
+    if(arguments.length = 0){ hex=0xFFFFFF; }
+    var material = new THREE.ParticleCanvasMaterial( {
+      color: hex,
+      program: function ( context ) {
+        context.beginPath();
+        context.arc( 0, 0, 0.004, 0, PI2, true );
+        context.closePath();
+        context.fill();
+      }
+    });
+    return material;
+  };
+  
+  var geometry = new THREE.Geometry();
+  
+  function eachProp(obj,fn){
+    for(var p in obj){
+      if(obj.hasOwnProperty(p)){ fn(p, obj[p]) }
+    };
+  };
+  
+  eachProp(systems, function(id, system){
+    console.log(typeof id);
+    var sec = Math.floor((system.security+0.05)*10);
+    var hex;
+    switch(sec){
+      case 0:hex=0xF00000; break;
+      case 1:hex=0xD73000; break;
+      case 2:hex=0xF04800; break;
+      case 3:hex=0xF06000; break;
+      case 4:hex=0xD77700; break;
+      case 5:hex=0xEFEF00; break;
+      case 6:hex=0x8FEF2F; break;
+      case 7:hex=0x00F000; break;
+      case 8:hex=0x00EF47; break;
+      case 9:hex=0x48F0C0; break;
+      case 10:hex=0x2FEFEF; break;
+      default: hex=0xFFFFFF; break;
+    };
+    particle = new THREE.Particle( colorMaterial(hex) );
+    
+    particle.position.x = system.x;
+    particle.position.y = system.y;
+    particle.position.z = system.z;
+    //particle.position.normalize();
+    //particle.position.multiplyScalar(500);
+    //particle.scale.x = particle.scale.y = 5;
+    scene.add( particle );
+    //geometry.vertices.push( particle.position );
+  });
+  
+  // lines
+  jumps.forEach(function(jump){
+    //console.log(jump);
+    //console.log(jump.from);
+    var tmp = new THREE.Geometry();
+    var to = systems[String(jump.to)] || null;
+    console.log(to);
+    var from = systems[String(jump.from)] || null;
+    console.log(from);
+    if(to && from){
+      tmp.vertices.push({x:to.x, y:to.y, z:to.z});
+      tmp.vertices.push({x:from.x, y:from.y, z:from.z});
+      var line = new THREE.Line( tmp, new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.5 } ) );
+      scene.add( line );
+    }
+  });
+  
+  document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+  document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+  document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+  
+  //
+  
+  window.addEventListener( 'resize', onWindowResize, false );
+  
+}
+
+function onWindowResize() {
+
+  windowHalfX = window.innerWidth / 2;
+  windowHalfY = window.innerHeight / 2;
+  
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  
+}
+
+//
+
+function onDocumentMouseMove(event) {
+
+  mouseX = event.clientX - windowHalfX;
+  mouseY = event.clientY - windowHalfY;
+  
+}
+
+function onDocumentTouchStart( event ) {
+
+  if ( event.touches.length > 1 ) {
+  
+    event.preventDefault();
+    
+    mouseX = event.touches[ 0 ].pageX - windowHalfX;
+    mouseY = event.touches[ 0 ].pageY - windowHalfY;
+    
+  }
+  
+}
+
+function onDocumentTouchMove( event ) {
+
+  if ( event.touches.length == 1 ) {
+  
+    event.preventDefault();
+    
+    mouseX = event.touches[ 0 ].pageX - windowHalfX;
+    mouseY = event.touches[ 0 ].pageY - windowHalfY;
+    
+  }
+  
+}
+
+//
+
+function animate() {
+
+  requestAnimationFrame( animate );
+  
+  render();
+  
+}
+
+function render() {
+  //camera.position.x += ( mouseX - camera.position.x ) * .05;
+  //camera.position.y += ( - mouseY + 200 - camera.position.y ) * .05;
+  
+  var r = 2;
+  var elevation = (mouseY*2/window.innerHeight)*Math.PI*0.25;
+  camera.position.y = -1*r*Math.sin(elevation);
+  var r2 = r*Math.cos(elevation);
+  camera.position.x = r2*Math.sin(Math.PI*2*mouseX/window.innerWidth);
+  camera.position.z = -1*r2*Math.cos(Math.PI*2*mouseX/window.innerWidth);
+  camera.lookAt( scene.position );
+  renderer.render( scene, camera );
+  
+}
+</script>
+</body>
+</html>

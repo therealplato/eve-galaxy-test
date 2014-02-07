@@ -1,0 +1,30 @@
+{
+  "name": "eve-galaxy-test",
+  "version": "0.0.1",
+  "description": "Demo of extracting and normalizing solarsystem data from SDD then rendering with three.js",
+  "main": "app.js",
+  "dependencies": {
+    "async": "~0.2.10",
+    "mysql": "~2.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/therealplato/eve-galaxy-test.git"
+  },
+  "keywords": [
+    "eveonline",
+    "bravecollective",
+    "mysql",
+    "threejs"
+  ],
+  "author": "therealplato@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/therealplato/eve-galaxy-test/issues"
+  },
+  "homepage": "https://github.com/therealplato/eve-galaxy-test"
+}
